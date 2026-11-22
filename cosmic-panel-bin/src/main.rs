@@ -216,8 +216,12 @@ fn main() -> Result<()> {
             let mut notifications_proxy =
                 match tokio::time::timeout(Duration::from_secs(5), notifications_conn()).await {
                     Ok(Ok(p)) => Some(p),
-                    _ => {
-                        error!("Failed to connect to the notifications daemon.");
+                    Ok(Err(err)) => {
+                        error!("Failed to connect to the notifications daemon: {err:?}");
+                        None
+                    },
+                    Err(_) => {
+                        error!("Timed out connecting to the notifications daemon.");
                         None
                     },
                 };
@@ -245,8 +249,14 @@ fn main() -> Result<()> {
                             .await
                             {
                                 Ok(Ok(p)) => Some(p),
-                                _ => {
-                                    error!("Failed to connect to the notifications daemon",);
+                                Ok(Err(err)) => {
+                                    error!(
+                                        "Failed to connect to the notifications daemon: {err:?}"
+                                    );
+                                    None
+                                },
+                                Err(_) => {
+                                    error!("Timed out connecting to the notifications daemon.");
                                     None
                                 },
                             };
