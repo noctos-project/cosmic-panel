@@ -8,12 +8,23 @@ edition = "2024"
 name = "cosmic-panel"
 path = "src/main.rs"
 
+[features]
+default = ["systemd", "system-wayland-server"]
+# Log to the systemd journal when it is reachable.
+systemd = ["dep:tracing-journald"]
+# Serve applets through the C libwayland-server instead of the pure-Rust
+# implementation. Needed for wl_drm / EGL client buffers
+# (`bind_wl_display`). libwayland-server's event-loop fd is an epoll fd,
+# which cannot be watched from an event port, so illumos builds leave this
+# off.
+system-wayland-server = ["smithay/use_system_lib"]
+
 [dependencies]
 calloop = { version = "0.14.4", features = ["executor"] }
 ordered-float = "5.3.0"
 smithay = { git = "https://github.com/smithay/smithay", default-features = false, features = [
-    "use_system_lib",
     "desktop",
+    "wayland_frontend",
     "backend_egl",
     "backend_drm",
     "renderer_gl",
@@ -40,7 +51,7 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
     "fmt",
     "ansi",
 ] }
-tracing-journald = "0.3"
+tracing-journald = { version = "0.3", optional = true }
 launch-pad = { git = "https://github.com/pop-os/launch-pad.git" }
 # launch-pad = { path = "../../launch-pad" }
 cosmic-panel-config = { path = "../cosmic-panel-config" }

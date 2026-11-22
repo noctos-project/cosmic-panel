@@ -1,3 +1,4 @@
+#[cfg(target_os = "linux")]
 use std::os::linux::net::SocketAddrExt;
 use std::os::unix::io::AsFd;
 use std::os::unix::net::{SocketAddr, UnixListener, UnixStream};
@@ -52,7 +53,21 @@ impl SecurityContextManager {
         // create a close fd that we can use to close the listener
         let (close_fd_ours, close_fd) = smithay::reexports::rustix::pipe::pipe()?;
         let s: String = Alphanumeric.sample_string(&mut rand::rng(), 50);
+        #[cfg(target_os = "linux")]
         let addr = SocketAddr::from_abstract_name(s)?;
+        // Abstract socket names are a Linux extension. Elsewhere the
+        // listener gets a random name in the runtime directory, which is
+        // unlinked below as soon as our own connection is made.
+        #[cfg(not(target_os = "linux"))]
+        let path = {
+            let mut dir = std::env::var_os("XDG_RUNTIME_DIR")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(std::env::temp_dir);
+            dir.push(format!("cosmic-panel-{s}"));
+            dir
+        };
+        #[cfg(not(target_os = "linux"))]
+        let addr = SocketAddr::from_pathname(&path)?;
         // this also listens on the socket
         let listener = UnixListener::bind_addr(&addr)?;
         let wp_security_context: WpSecurityContextV1 = self.manager.create_listener(
@@ -61,7 +76,10 @@ impl SecurityContextManager {
             qh,
             SecurityContext { conn: Arc::new(Mutex::new(None)) },
         );
-        let conn = UnixStream::connect_addr(&addr)?;
+        let conn = UnixStream::connect_addr(&addr);
+        #[cfg(not(target_os = "linux"))]
+        let _ = std::fs::remove_file(&path);
+        let conn = conn?;
         // XXX make sure no one else can connect to the listener
         drop(close_fd_ours);
 

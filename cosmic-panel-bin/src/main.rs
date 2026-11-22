@@ -76,11 +76,14 @@ fn main() -> Result<()> {
     let fmt_layer = fmt::layer().with_target(false);
     let filter_layer =
         EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("warn")).unwrap();
+    #[cfg(feature = "systemd")]
     if let Ok(journal_layer) = tracing_journald::layer() {
         tracing_subscriber::registry().with(journal_layer).with(filter_layer).init();
     } else {
         tracing_subscriber::registry().with(fmt_layer).with(filter_layer).init();
     }
+    #[cfg(not(feature = "systemd"))]
+    tracing_subscriber::registry().with(fmt_layer).with(filter_layer).init();
 
     log_panics::init();
 

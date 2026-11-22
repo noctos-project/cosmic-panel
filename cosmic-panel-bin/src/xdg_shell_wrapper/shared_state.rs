@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use cctk::wayland_client::Proxy;
+#[cfg(feature = "system-wayland-server")]
 use itertools::Itertools;
 use sctk::reexports::client::protocol::wl_surface::WlSurface;
 use sctk::shell::WaylandSurface;
@@ -12,12 +13,15 @@ use smithay::backend::renderer::element::surface::{
     WaylandSurfaceRenderElement, render_elements_from_surface_tree,
 };
 use smithay::backend::renderer::gles::GlesRenderer;
-use smithay::backend::renderer::{Bind, ImportDma, ImportEgl};
+use smithay::backend::renderer::Bind;
+#[cfg(feature = "system-wayland-server")]
+use smithay::backend::renderer::{ImportDma, ImportEgl};
 use smithay::desktop::utils::send_frames_surface_tree;
 use smithay::input::keyboard::FilterResult;
 use smithay::reexports::wayland_server::DisplayHandle;
 use smithay::utils::SERIAL_COUNTER;
 use smithay::wayland::compositor::with_states;
+#[cfg(feature = "system-wayland-server")]
 use smithay::wayland::dmabuf::DmabufState;
 use smithay::wayland::fractional_scale::with_fractional_scale;
 use tracing::{error, info};
@@ -137,6 +141,15 @@ impl GlobalState {
 
 impl GlobalState {
     /// bind the display for the space
+    #[cfg(not(feature = "system-wayland-server"))]
+    pub fn bind_display(&mut self, _dh: &DisplayHandle) {
+        // `bind_wl_display` needs the C libwayland-server. Without it
+        // applets are limited to wl_shm buffers and no linux-dmabuf global
+        // is advertised.
+    }
+
+    /// bind the display for the space
+    #[cfg(feature = "system-wayland-server")]
     pub fn bind_display(&mut self, dh: &DisplayHandle) {
         if let Some(renderer) = self.space.renderer() {
             let res = renderer.bind_wl_display(dh);

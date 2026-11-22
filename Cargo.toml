@@ -36,3 +36,23 @@ cosmic-protocols = { git = "https://github.com/pop-os//cosmic-protocols", rev = 
 # libcosmic = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
 # cosmic-theme = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
 # iced_tiny_skia = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
+
+# NoctOS: illumos-patched crates. smithay is vendored here because this tree
+# pins a different rev (0ff0098) than cosmic-comp does; the rest come from
+# the sibling cosmic-comp and cosmic-launcher fork checkouts, as in the other
+# NoctOS forks.
+[patch."https://github.com/smithay/smithay"]
+smithay = { path = "noctos-vendor/smithay" }
+
+[patch.crates-io]
+calloop = { path = "../cosmic-comp/noctos-vendor/calloop" }
+polling = { path = "../cosmic-comp/noctos-vendor/polling" }
+wayland-backend = { path = "../cosmic-comp/noctos-vendor/wayland-backend" }
+drm-ffi = { path = "../cosmic-comp/noctos-vendor/drm-ffi" }
+# second, older DRM stack pulled in by softbuffer (via iced_tiny_skia)
+drm-ffi-07 = { package = "drm-ffi", path = "../cosmic-comp/noctos-vendor/drm-ffi-0.7" }
+
+# NoctOS: pop-os/softbuffer (tag cosmic-4.0, c2b2c19) with a POSIX-correct
+# shm_open name.
+[patch."https://github.com/pop-os/softbuffer"]
+softbuffer = { path = "../cosmic-launcher/noctos-vendor/softbuffer" }
