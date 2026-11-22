@@ -53,7 +53,8 @@ impl SealedFile {
     /// Create a `[SealedFile]` with the given binary data.
     #[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "android")))]
     pub fn with_data(name: &CStr, data: &[u8]) -> Result<Self, std::io::Error> {
-        use rand::{Rng, distr::Alphanumeric};
+        // rand 0.10 moved `sample` from `Rng` to `RngExt`.
+        use rand::{RngExt, distr::Alphanumeric};
         use rustix::{
             io::Errno,
             shm::{self, Mode},
@@ -65,7 +66,13 @@ impl SealedFile {
         // loop a couple times if it exists.
         let mut n = 0;
         let (shm_name, mut file) = loop {
-            let mut shm_name = name.to_bytes().to_owned();
+            // POSIX only defines `shm_open` for names with a leading slash;
+            // illumos (and OpenBSD) reject anything else with EINVAL.
+            let mut shm_name = Vec::with_capacity(name.to_bytes().len() + 9);
+            if !name.to_bytes().starts_with(b"/") {
+                shm_name.push(b'/');
+            }
+            shm_name.extend_from_slice(name.to_bytes());
             shm_name.push(b'-');
             shm_name.extend((0..7).map(|_| rng.sample(Alphanumeric)));
             let fd = shm::open(

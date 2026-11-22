@@ -362,7 +362,13 @@ unsafe fn siginfo_si_addr(info: *mut libc::siginfo_t) -> *mut libc::c_void {
     unsafe { (*(info as *const siginfo_t)).si_addr }
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "android")))]
+#[cfg(target_os = "illumos")]
+unsafe fn siginfo_si_addr(info: *mut libc::siginfo_t) -> *mut libc::c_void {
+    // libc exposes si_addr as an accessor method on illumos.
+    unsafe { (*info).si_addr() as _ }
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "android", target_os = "illumos")))]
 unsafe fn siginfo_si_addr(info: *mut libc::siginfo_t) -> *mut libc::c_void {
     unsafe { (*info).si_addr as _ }
 }

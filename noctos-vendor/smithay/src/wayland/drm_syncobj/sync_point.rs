@@ -197,6 +197,14 @@ impl DrmSyncPoint {
     /// `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT` and need to
     /// inject the resulting sync-file fence into the client's
     /// release point.
+    #[cfg(target_os = "illumos")]
+    pub fn import_sync_file(&self, _fd: BorrowedFd<'_>) -> io::Result<()> {
+        // No DRM syncobj on illumos.
+        Err(io::ErrorKind::Unsupported.into())
+    }
+
+    /// See the non-illumos variant above.
+    #[cfg(not(target_os = "illumos"))]
     pub fn import_sync_file(&self, fd: BorrowedFd<'_>) -> io::Result<()> {
         use rustix::ioctl::{Updater, ioctl, opcode::read_write};
         use std::os::fd::AsRawFd;

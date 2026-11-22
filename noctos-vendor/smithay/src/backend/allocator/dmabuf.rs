@@ -12,6 +12,7 @@
 
 use calloop::generic::Generic;
 use calloop::{EventSource, Interest, Mode, PostAction};
+#[cfg(not(target_os = "illumos"))]
 use rustix::ioctl::Setter;
 
 use super::{Allocator, Buffer, Format, Fourcc, Modifier};
@@ -321,8 +322,15 @@ impl Dmabuf {
             .planes
             .get(idx)
             .ok_or(DmabufSyncFailed::PlaneIndexOutOfBound)?;
+        #[cfg(not(target_os = "illumos"))]
         unsafe { rustix::ioctl::ioctl(&plane.fd, Setter::<DMA_BUF_SYNC, _>::new(dma_buf_sync { flags })) }
             .map_err(std::io::Error::from)?;
+        #[cfg(target_os = "illumos")]
+        {
+            // No dma-buf on illumos; plane fds here are ordinary mappable fds
+            // (memfd/tmpfs) and CPU-coherent, so sync is a no-op.
+            let _ = (plane, flags);
+        }
         Ok(())
     }
 }
@@ -395,10 +403,12 @@ bitflags::bitflags! {
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
+#[cfg(not(target_os = "illumos"))]
 struct dma_buf_sync {
     flags: DmabufSyncFlags,
 }
 
+#[cfg(not(target_os = "illumos"))]
 const DMA_BUF_SYNC: rustix::ioctl::Opcode = rustix::ioctl::opcode::write::<dma_buf_sync>(b'b', 0);
 
 /// A mapping into a [`Dmabuf`]
