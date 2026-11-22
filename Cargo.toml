@@ -49,6 +49,8 @@ calloop = { path = "../cosmic-comp/noctos-vendor/calloop" }
 polling = { path = "../cosmic-comp/noctos-vendor/polling" }
 wayland-backend = { path = "../cosmic-comp/noctos-vendor/wayland-backend" }
 drm-ffi = { path = "../cosmic-comp/noctos-vendor/drm-ffi" }
+# libei bindings, a hard dependency of smithay; recvmsg flags differ on illumos
+reis = { path = "../cosmic-comp/noctos-vendor/reis" }
 # second, older DRM stack pulled in by softbuffer (via iced_tiny_skia)
 drm-ffi-07 = { package = "drm-ffi", path = "../cosmic-comp/noctos-vendor/drm-ffi-0.7" }
 
